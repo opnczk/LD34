@@ -10,7 +10,11 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
+import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
 import com.quailshillstudio.ludumdare34.LD34;
 
@@ -30,7 +34,9 @@ public class GameScreen implements Screen {
 	//(Gdx.graphics.getHeight()*50) /480
 	private Texture bckText;
 	private OrthographicCamera orthoCam;
-	private float size = 20;
+	private float size = 10;
+	private Body ball;
+	private Body center;
 
 	public GameScreen(LD34 topDown) { 
     	width = Gdx.graphics.getWidth();
@@ -52,6 +58,38 @@ public class GameScreen implements Screen {
         galaxText = new TextureRegion(new Texture(Gdx.files.internal("galaxy.png")));
         debugRenderer = new Box2DDebugRenderer();
         shapeRenderer = new ShapeRenderer();
+        
+        BodyDef defBall = new BodyDef();
+        defBall.type = BodyDef.BodyType.DynamicBody;
+        defBall.position.set(240, 240); // center of the universe man
+        ball = world.createBody(defBall);
+        
+        FixtureDef fixDefBall = new FixtureDef();
+        fixDefBall.isSensor = true;
+        fixDefBall.density = .25f;
+        fixDefBall.restitution = 0.4f;
+        CircleShape rond = new CircleShape();
+        rond.setRadius(size);
+         
+        fixDefBall.shape = rond;
+        ball.createFixture(fixDefBall);
+        rond.dispose();
+        
+        BodyDef defCenter = new BodyDef();
+        defCenter.type = BodyDef.BodyType.DynamicBody;
+        defCenter.position.set(240, 240); // center of the universe man
+        center = world.createBody(defCenter);
+        
+        FixtureDef fixDefCenter = new FixtureDef();
+        fixDefCenter.isSensor = true;
+        fixDefCenter.density = .25f;
+        fixDefCenter.restitution = 0.4f;
+        CircleShape rondcenter = new CircleShape();
+        rondcenter.setRadius(size/4);
+         
+        fixDefCenter.shape = rondcenter;
+        center.createFixture(fixDefCenter);
+        rondcenter.dispose();
     }
  
 
@@ -69,9 +107,10 @@ public class GameScreen implements Screen {
         
     	if(Gdx.input.isTouched()){
     		size += .5f;
+    		ball.getFixtureList().get(0).getShape().setRadius(size);
+    		center.getFixtureList().get(0).getShape().setRadius(size/4);
     	}
     	batch.setProjectionMatrix(camera.combined);
-        debugRenderer.render(world, camera.combined);
         shapeRenderer.setProjectionMatrix(camera.combined);
         
         
@@ -87,21 +126,20 @@ public class GameScreen implements Screen {
         batch.draw(galaxText, cutieX/2, cutieY/2, cutieWidth/2.0f,cutieHeight/2.0f, cutieWidth, cutieHeight, 1f, 1f,count, false);
         batch.end();
         
-        /*if(count < -135){
-            clockwise = false;
-            count = -135;
-        }else if(count > -45){
-            clockwise = true;
-            count = -45;
-        }*/
-        
+       
         if(clockwise){
             //count --;
+        	 ball.setTransform(240, 240,(float) (ball.getAngle() - Math.toRadians(1f)));
+        	 center.setTransform(240, 240,(float) (center.getAngle() - Math.toRadians(1f)));
             count = count -1f;
         }else{
             //count ++;
-            count = count + 1f;
+        	ball.setTransform(240, 240,(float) (ball.getAngle() + Math.toRadians(1f)));
+        	 center.setTransform(240, 240,(float) (center.getAngle() + Math.toRadians(1f)));
+            count = count +1f;
         }
+        
+        debugRenderer.render(world, camera.combined);
     }
 
 	
