@@ -16,18 +16,24 @@ import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.CircleShape;
-import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.quailshillstudio.ludumdare34.LD34;
-import com.quailshillstudio.ludumdare34.entities.ParticleEmitter;
+import com.quailshillstudio.ludumdare34.entities.Destroyer;
+import com.quailshillstudio.ludumdare34.entities.Ressource;
+import com.quailshillstudio.ludumdare34.utils.TouchFeedBack;
 
 
 public class GameScreen implements Screen {
 
     private PerspectiveCamera camera;
 	public SpriteBatch batch;
-	private World world;
+	public World world;
 	private Box2DDebugRenderer debugRenderer;
 	private ShapeRenderer shapeRenderer;
 	private float count;
@@ -38,13 +44,23 @@ public class GameScreen implements Screen {
 	//(Gdx.graphics.getHeight()*50) /480
 	private Texture bckText;
 	private OrthographicCamera orthoCam;
-	private float size = 10;
+	public float size = 150f;
 	private Body ball;
 	private Body center;
-	private ParticleEmitter pae;
-	private Fixture emitter1;
-	private Fixture emitter2;
 	private Sprite galaxSpr;
+	private Array<Ressource> ressources;
+	private Array<Destroyer> destroyers;
+	static Array<TouchFeedBack> touches = new Array<TouchFeedBack>();
+	
+	public Body popCircle;
+	private float timer;
+	private float currentTime;
+	private float initialTime;
+	private Stage stage;
+	private ImageButton defenseButton;
+	private ImageButton fusionButton;
+	private boolean fusionning;
+	
 
 	public GameScreen(LD34 topDown) { 
     	width = Gdx.graphics.getWidth();
@@ -57,8 +73,24 @@ public class GameScreen implements Screen {
     	camera.near = 0.1f;
     	camera.far = 1000;
     	camera.rotate(45, 1, 0, 0);
-    	//stage.setCamera(camera);
+    	stage = new Stage();
+    	//stage.setViewport(new FitViewport(width, height));
     	
+    	Texture defenseButtonImg = new Texture(Gdx.files.internal("data/particles/circle.png"));
+ 	   	defenseButtonImg.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+ 	   	defenseButton = new ImageButton(new Image(defenseButtonImg).getDrawable());
+ 	   	defenseButton.setPosition(Gdx.graphics.getWidth() - (Gdx.graphics.getWidth()/10), 0); //** Button location **//
+        defenseButton.setHeight(Gdx.graphics.getWidth() /10); //** Button Height **//
+        defenseButton.setWidth(Gdx.graphics.getWidth() /10); //** Button Width **//
+        stage.addActor(defenseButton);
+
+    	Texture fusionButtonImg = new Texture(Gdx.files.internal("data/particles/circle.png"));
+ 	   	fusionButtonImg.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+ 	   	fusionButton = new ImageButton(new Image(fusionButtonImg).getDrawable());
+ 	   	fusionButton.setPosition(0, 0); //** Button location **//
+        fusionButton.setHeight(Gdx.graphics.getWidth() /10); //** Button Height **//
+        fusionButton.setWidth(Gdx.graphics.getWidth() /10); //** Button Width **//
+        stage.addActor(fusionButton);
         
         batch = new SpriteBatch();
         world = new World(new Vector2(0, 0), true);
@@ -70,6 +102,7 @@ public class GameScreen implements Screen {
         debugRenderer = new Box2DDebugRenderer();
         shapeRenderer = new ShapeRenderer();
         
+        /*Galaxy bounds*/
         BodyDef defBall = new BodyDef();
         defBall.type = BodyDef.BodyType.DynamicBody;
         defBall.position.set(240, 240); // center of the universe man
@@ -86,6 +119,7 @@ public class GameScreen implements Screen {
         ball.createFixture(fixDefBall);
         rond.dispose();
         
+        /*Galaxy Center*/
         BodyDef defCenter = new BodyDef();
         defCenter.type = BodyDef.BodyType.DynamicBody;
         defCenter.position.set(240, 240); // center of the universe man
@@ -102,21 +136,26 @@ public class GameScreen implements Screen {
         center.createFixture(fixDefCenter);
         rondcenter.dispose();
         
+        /*Ressources and Destroyers pop-up circle*/
+        BodyDef defPop = new BodyDef();
+        defPop.type = BodyDef.BodyType.DynamicBody;
+        defPop.position.set(240, 240); // center of the universe man
+        popCircle = world.createBody(defPop);
         
-        CircleShape sensorShape = new CircleShape();
-		sensorShape.setRadius(1f);
-		sensorShape.setPosition(new Vector2(0,size/4));
-		FixtureDef sensorDef = new FixtureDef();
-		sensorDef.shape = sensorShape;
-		sensorDef.isSensor = true;
-		emitter1 = center.createFixture(sensorDef);
-		sensorShape.setPosition(new Vector2(0,-size/4));
-		emitter2 = center.createFixture(sensorDef);
-		
-        pae = new ParticleEmitter(this);
+        FixtureDef fixDefPop = new FixtureDef();
+        fixDefPop.isSensor = true;
+        fixDefPop.density = .25f;
+        fixDefPop.restitution = 0.4f;
+        CircleShape rondPop = new CircleShape();
+        rondPop.setRadius(840f);//840f
+         
+        fixDefPop.shape = rondcenter;
+        popCircle.createFixture(fixDefPop);
+        rondPop.dispose();
+        
+        ressources = new Array<Ressource>();
+        destroyers = new Array<Destroyer>();
     }
- 
-
    
 	@Override
     public void dispose() {
@@ -125,45 +164,73 @@ public class GameScreen implements Screen {
  
     @Override
     public void render(float delta) {
+    	currentTime += delta;
+        float position = currentTime - initialTime ;
+        float gamePlayPosition = position / 130;
+        
     	Gdx.gl.glClearColor(1, 0, 0, 1);
     	Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
     	camera.update();
         
-    	if(Gdx.input.isTouched()){
-    		size += .5f;
-    		ball.getFixtureList().get(0).getShape().setRadius(size);
-    		center.getFixtureList().get(0).getShape().setRadius(size/4);
-    		((CircleShape)emitter1.getShape()).setPosition(new Vector2(0,size/4));
-    		((CircleShape)emitter2.getShape()).setPosition(new Vector2(0,-size/4));
+    	if(defenseButton.isPressed() && touches.size == 0){
+    		touches.add(new TouchFeedBack(240, 240, this));
+    		//size += 1.5f;
+    		//ball.getFixtureList().get(0).getShape().setRadius(size);
+    		//center.getFixtureList().get(0).getShape().setRadius(size/4);
+    		//((CircleShape)emitter1.getShape()).setPosition(new Vector2(0,size/4));
     	}
+    	if(fusionButton.isPressed() && fusionning == false){
+    		System.out.println("FUSIOOOOON !");
+    	}
+
+    	for(TouchFeedBack touch : touches){
+    		if(!touch.drawRing){
+    			touches.removeValue(touch, false);
+    		}
+    	}
+    	
     	batch.setProjectionMatrix(camera.combined);
         shapeRenderer.setProjectionMatrix(camera.combined);
         
-        
-        float cutieWidth = ((width*size) /basicWidth);
-        float cutieHeight = ((height*size) /basicHeight);
-        float cutieX = ((width*240) /basicWidth) - ((width*size) /basicWidth);
-        float cutieY = ((height*240) /basicHeight) - ((height*size) /basicHeight);
+		if(timer > 0){
+        	timer -= delta;
+        }else if(timer <= 0){
+        	timer = (float) (Math.floor(Math.random() * 1.75f) + 0.5f);
+        	double pileFace = Math.random();
+        	if(pileFace <= 0.5){
+        		ressources.add(new Ressource(this));
+        	}else{
+        		destroyers.add(new Destroyer(this));
+        	}
+        }
         
         batch.begin();
         batch.setProjectionMatrix(orthoCam.combined);
         batch.draw(bckText, -width/2, -height/2, width, height);
         
         batch.setProjectionMatrix(camera.combined);
-       // batch.draw(galaxText, cutieX/2, cutieY/2, cutieWidth/2.0f,cutieHeight/2.0f, cutieWidth, cutieHeight, 1f, 1f,count, false);
-            // spr.setBounds(Globals.metersToPixelsX(bodies.get(i).getPosition().x
-            // - 3.5f/2),
-            // Globals.metersToPixelsX(bodies.get(i).getPosition().y -
-            // 3.5f/2), Globals.metersToPixelsX(3.5f),
-            // Globals.metersToPixelsX(3.5f));
             galaxSpr.setOrigin(galaxSpr.getWidth() / 2,galaxSpr.getHeight() / 2);
-            galaxSpr.setPosition(center.getPosition().x - (galaxSpr.getWidth() / 2),center.getPosition().x - (galaxSpr.getHeight() / 2));
+            galaxSpr.setPosition(center.getPosition().x - (galaxSpr.getWidth() / 2),center.getPosition().y - (galaxSpr.getHeight() / 2));
             galaxSpr.setRotation((float) Math.toDegrees(center.getAngle()));
-            galaxSpr.setSize(size*2, size*2);
+            galaxSpr.setSize(size*2 + size/4, size*2 + size/4);
             galaxSpr.draw(batch);
+        
+            for(int i =0; i < touches.size; i++){
+    			TouchFeedBack touch = touches.get(i); 
+    			if(touch.hitPosition == 0)touch.hitPosition= gamePlayPosition;
+    			touch.drawExpandingRing(batch, gamePlayPosition);
+    			if(touch.drawRing == false)touches.removeIndex(i);
+    		}
             
-        pae.render(emitter1.getBody().getWorldPoint((((CircleShape)emitter1.getShape()).getPosition())));
-        pae.render(emitter2.getBody().getWorldPoint((((CircleShape)emitter2.getShape()).getPosition())));
+            for(Ressource res : ressources){
+            	res.update(delta);
+            	res.render();
+            }
+            
+            for(Destroyer des : destroyers){
+            	des.update(delta);
+            	des.render();
+            }
         batch.end();
         
         float speed = .5f;
@@ -180,7 +247,10 @@ public class GameScreen implements Screen {
             count = count + speed;
         }
         
-        //debugRenderer.render(world, camera.combined);
+        stage.act(Gdx.graphics.getDeltaTime());        
+    	stage.draw();
+       // debugRenderer.render(world, camera.combined);
+		world.step(Gdx.app.getGraphics().getDeltaTime(), 3, 3);
     }
 
 	
@@ -201,7 +271,7 @@ public class GameScreen implements Screen {
 
 	@Override
 	public void show() {
-		
+		Gdx.input.setInputProcessor(stage);
 	}
 
 	@Override
