@@ -7,6 +7,8 @@ import com.quailshillstudio.ludumdare34.LD34;
 public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
+		config.width = 1280;//640
+		config.height = 960; //480
 		new LwjglApplication(new LD34(), config);
 	}
 }
