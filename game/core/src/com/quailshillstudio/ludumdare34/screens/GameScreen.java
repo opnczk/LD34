@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -60,7 +61,9 @@ public class GameScreen implements Screen {
         batch = new SpriteBatch();
         world = new World(new Vector2(0, 0), true);
         bckText = new Texture(Gdx.files.internal("bck.png"));
+        bckText.setFilter(TextureFilter.Linear, TextureFilter.Linear);
         galaxText = new TextureRegion(new Texture(Gdx.files.internal("galaxy2.png")));
+        galaxText.getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
         debugRenderer = new Box2DDebugRenderer();
         shapeRenderer = new ShapeRenderer();
         
@@ -148,17 +151,18 @@ public class GameScreen implements Screen {
         pae.render(emitter2.getBody().getWorldPoint((((CircleShape)emitter2.getShape()).getPosition())));
         batch.end();
         
-       
+        float speed = .5f;
         if(clockwise){
             //count --;
-        	 ball.setTransform(240, 240,(float) (ball.getAngle() - Math.toRadians(1f)));
-        	 center.setTransform(240, 240,(float) (center.getAngle() - Math.toRadians(1f)));
-            count = count -1f;
+        	
+        	 ball.setTransform(240, 240,(float) (ball.getAngle() - Math.toRadians(speed)));
+        	 center.setTransform(240, 240,(float) (center.getAngle() - Math.toRadians(speed)));
+            count = count - speed;
         }else{
             //count ++;
-        	ball.setTransform(240, 240,(float) (ball.getAngle() + Math.toRadians(1f)));
-        	 center.setTransform(240, 240,(float) (center.getAngle() + Math.toRadians(1f)));
-            count = count +1f;
+        	ball.setTransform(240, 240,(float) (ball.getAngle() + Math.toRadians(speed)));
+        	 center.setTransform(240, 240,(float) (center.getAngle() + Math.toRadians(speed)));
+            count = count + speed;
         }
         
         debugRenderer.render(world, camera.combined);
