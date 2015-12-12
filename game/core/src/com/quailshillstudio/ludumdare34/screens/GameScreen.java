@@ -159,7 +159,7 @@ public class GameScreen implements Screen {
             galaxSpr.setOrigin(galaxSpr.getWidth() / 2,galaxSpr.getHeight() / 2);
             galaxSpr.setPosition(center.getPosition().x - (galaxSpr.getWidth() / 2),center.getPosition().x - (galaxSpr.getHeight() / 2));
             galaxSpr.setRotation((float) Math.toDegrees(center.getAngle()));
-            galaxSpr.setSize(size*2,size*2);
+            galaxSpr.setSize(size*2, size*2);
             galaxSpr.draw(batch);
             
         pae.render(emitter1.getBody().getWorldPoint((((CircleShape)emitter1.getShape()).getPosition())));
