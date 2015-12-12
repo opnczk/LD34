@@ -14,15 +14,17 @@ import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
 import com.quailshillstudio.ludumdare34.LD34;
+import com.quailshillstudio.ludumdare34.entities.ParticleEmitter;
 
 
 public class GameScreen implements Screen {
 
     private PerspectiveCamera camera;
-	private SpriteBatch batch;
+	public SpriteBatch batch;
 	private World world;
 	private Box2DDebugRenderer debugRenderer;
 	private ShapeRenderer shapeRenderer;
@@ -37,6 +39,9 @@ public class GameScreen implements Screen {
 	private float size = 10;
 	private Body ball;
 	private Body center;
+	private ParticleEmitter pae;
+	private Fixture emitter1;
+	private Fixture emitter2;
 
 	public GameScreen(LD34 topDown) { 
     	width = Gdx.graphics.getWidth();
@@ -55,7 +60,7 @@ public class GameScreen implements Screen {
         batch = new SpriteBatch();
         world = new World(new Vector2(0, 0), true);
         bckText = new Texture(Gdx.files.internal("bck.png"));
-        galaxText = new TextureRegion(new Texture(Gdx.files.internal("galaxy.png")));
+        galaxText = new TextureRegion(new Texture(Gdx.files.internal("galaxy2.png")));
         debugRenderer = new Box2DDebugRenderer();
         shapeRenderer = new ShapeRenderer();
         
@@ -90,6 +95,19 @@ public class GameScreen implements Screen {
         fixDefCenter.shape = rondcenter;
         center.createFixture(fixDefCenter);
         rondcenter.dispose();
+        
+        
+        CircleShape sensorShape = new CircleShape();
+		sensorShape.setRadius(1f);
+		sensorShape.setPosition(new Vector2(0,size/4));
+		FixtureDef sensorDef = new FixtureDef();
+		sensorDef.shape = sensorShape;
+		sensorDef.isSensor = true;
+		emitter1 = center.createFixture(sensorDef);
+		sensorShape.setPosition(new Vector2(0,-size/4));
+		emitter2 = center.createFixture(sensorDef);
+		
+        pae = new ParticleEmitter(this);
     }
  
 
@@ -109,6 +127,8 @@ public class GameScreen implements Screen {
     		size += .5f;
     		ball.getFixtureList().get(0).getShape().setRadius(size);
     		center.getFixtureList().get(0).getShape().setRadius(size/4);
+    		((CircleShape)emitter1.getShape()).setPosition(new Vector2(0,size/4));
+    		((CircleShape)emitter2.getShape()).setPosition(new Vector2(0,-size/4));
     	}
     	batch.setProjectionMatrix(camera.combined);
         shapeRenderer.setProjectionMatrix(camera.combined);
@@ -124,6 +144,8 @@ public class GameScreen implements Screen {
         batch.draw(bckText, -width/2, -height/2, width*2, height*2);
         batch.setProjectionMatrix(camera.combined);
         batch.draw(galaxText, cutieX/2, cutieY/2, cutieWidth/2.0f,cutieHeight/2.0f, cutieWidth, cutieHeight, 1f, 1f,count, false);
+        pae.render(emitter1.getBody().getWorldPoint((((CircleShape)emitter1.getShape()).getPosition())));
+        pae.render(emitter2.getBody().getWorldPoint((((CircleShape)emitter2.getShape()).getPosition())));
         batch.end();
         
        
