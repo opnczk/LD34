@@ -147,7 +147,7 @@ public class GameScreen implements Screen {
         
         batch.begin();
         batch.setProjectionMatrix(orthoCam.combined);
-        batch.draw(bckText, -width/2, -height/2, width*2, height*2);
+        batch.draw(bckText, -width/2, -height/2, width, height);
         
         batch.setProjectionMatrix(camera.combined);
        // batch.draw(galaxText, cutieX/2, cutieY/2, cutieWidth/2.0f,cutieHeight/2.0f, cutieWidth, cutieHeight, 1f, 1f,count, false);
@@ -180,7 +180,7 @@ public class GameScreen implements Screen {
             count = count + speed;
         }
         
-        debugRenderer.render(world, camera.combined);
+        //debugRenderer.render(world, camera.combined);
     }
 
 	
