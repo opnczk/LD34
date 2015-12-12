@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -43,6 +44,7 @@ public class GameScreen implements Screen {
 	private ParticleEmitter pae;
 	private Fixture emitter1;
 	private Fixture emitter2;
+	private Sprite galaxSpr;
 
 	public GameScreen(LD34 topDown) { 
     	width = Gdx.graphics.getWidth();
@@ -64,6 +66,7 @@ public class GameScreen implements Screen {
         bckText.setFilter(TextureFilter.Linear, TextureFilter.Linear);
         galaxText = new TextureRegion(new Texture(Gdx.files.internal("galaxy2.png")));
         galaxText.getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
+        galaxSpr = new Sprite(galaxText);
         debugRenderer = new Box2DDebugRenderer();
         shapeRenderer = new ShapeRenderer();
         
@@ -145,8 +148,20 @@ public class GameScreen implements Screen {
         batch.begin();
         batch.setProjectionMatrix(orthoCam.combined);
         batch.draw(bckText, -width/2, -height/2, width*2, height*2);
+        
         batch.setProjectionMatrix(camera.combined);
-        batch.draw(galaxText, cutieX/2, cutieY/2, cutieWidth/2.0f,cutieHeight/2.0f, cutieWidth, cutieHeight, 1f, 1f,count, false);
+       // batch.draw(galaxText, cutieX/2, cutieY/2, cutieWidth/2.0f,cutieHeight/2.0f, cutieWidth, cutieHeight, 1f, 1f,count, false);
+            // spr.setBounds(Globals.metersToPixelsX(bodies.get(i).getPosition().x
+            // - 3.5f/2),
+            // Globals.metersToPixelsX(bodies.get(i).getPosition().y -
+            // 3.5f/2), Globals.metersToPixelsX(3.5f),
+            // Globals.metersToPixelsX(3.5f));
+            galaxSpr.setOrigin(galaxSpr.getWidth() / 2,galaxSpr.getHeight() / 2);
+            galaxSpr.setPosition(center.getPosition().x - (galaxSpr.getWidth() / 2),center.getPosition().x - (galaxSpr.getHeight() / 2));
+            galaxSpr.setRotation((float) Math.toDegrees(center.getAngle()));
+            galaxSpr.setSize(size*2,size*2);
+            galaxSpr.draw(batch);
+            
         pae.render(emitter1.getBody().getWorldPoint((((CircleShape)emitter1.getShape()).getPosition())));
         pae.render(emitter2.getBody().getWorldPoint((((CircleShape)emitter2.getShape()).getPosition())));
         batch.end();
