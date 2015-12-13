@@ -55,7 +55,8 @@ public class TouchFeedBack {
         fixDefCenter.shape = rondcenter;
         ringBody.createFixture(fixDefCenter);
         rondcenter.dispose();
-	}
+//        hitPosition = gmScr.currentTime;
+        		}
 	
 	public void drawExpandingRing(SpriteBatch batch, float position){
      	float tickAlphaScale = (position - hitPosition);
@@ -81,6 +82,7 @@ public class TouchFeedBack {
     		count --;
     		count --;
      	}
+     	System.out.println(alpha);
     	if(alpha < 0.05f){
      		drawRing = false;
      		gmScr.world.destroyBody(ringBody);

@@ -56,7 +56,7 @@ public class GameScreen implements Screen {
 	
 	public Body popCircle;
 	private float timer;
-	private float currentTime;
+	public float currentTime;
 	private float initialTime;
 	private Stage stage;
 	private ImageButton defenseButton;
@@ -170,7 +170,7 @@ public class GameScreen implements Screen {
     	
 		world.step(Gdx.app.getGraphics().getDeltaTime(), 3, 3);
     	currentTime += delta;
-        float position = currentTime - initialTime ;
+        float position = currentTime - initialTime;
         float gamePlayPosition = position / 130;
         
     	Gdx.gl.glClearColor(1, 0, 0, 1);
