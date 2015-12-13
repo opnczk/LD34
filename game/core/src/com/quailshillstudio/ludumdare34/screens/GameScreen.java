@@ -1,5 +1,7 @@
 package com.quailshillstudio.ludumdare34.screens;
 
+import java.util.Iterator;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
@@ -22,10 +24,10 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.quailshillstudio.ludumdare34.LD34;
 import com.quailshillstudio.ludumdare34.entities.Destroyer;
 import com.quailshillstudio.ludumdare34.entities.Ressource;
+import com.quailshillstudio.ludumdare34.utils.BodyUD;
 import com.quailshillstudio.ludumdare34.utils.CollisionGeometry;
 import com.quailshillstudio.ludumdare34.utils.TouchFeedBack;
 
@@ -51,8 +53,8 @@ public class GameScreen implements Screen {
 	private Sprite galaxSpr;
 	private Array<Ressource> ressources;
 	private Array<Destroyer> destroyers;
-	public Array<Body> toDestroy = new Array<Body>();
-	static Array<TouchFeedBack> touches = new Array<TouchFeedBack>();
+	public Array<Body> toDestroy;
+	public Array<TouchFeedBack> touches;
 	
 	public Body popCircle;
 	private float timer;
@@ -62,7 +64,7 @@ public class GameScreen implements Screen {
 	private ImageButton defenseButton;
 	private ImageButton fusionButton;
 	private boolean fusionning;
-	private Vector2 nullVector = new Vector2(0,0);
+	private Vector2 nullVector;
 	
 
 	public GameScreen(LD34 topDown) { 
@@ -79,6 +81,10 @@ public class GameScreen implements Screen {
     	stage = new Stage();
     	//stage.setViewport(new FitViewport(width, height));
     	
+    	touches = new Array<TouchFeedBack>();
+    	 toDestroy = new Array<Body>();
+    	 nullVector = new Vector2(0,0);
+
     	Texture defenseButtonImg = new Texture(Gdx.files.internal("data/particles/circle.png"));
  	   	defenseButtonImg.setFilter(TextureFilter.Linear, TextureFilter.Linear);
  	   	defenseButton = new ImageButton(new Image(defenseButtonImg).getDrawable());
@@ -104,12 +110,13 @@ public class GameScreen implements Screen {
         galaxSpr = new Sprite(galaxText);
         debugRenderer = new Box2DDebugRenderer();
         shapeRenderer = new ShapeRenderer();
-        
+
         /*Galaxy bounds*/
         BodyDef defBall = new BodyDef();
         defBall.type = BodyDef.BodyType.DynamicBody;
         defBall.position.set(240, 240); // center of the universe man
         ball = world.createBody(defBall);
+        ball.setUserData(new BodyUD());
         
         FixtureDef fixDefBall = new FixtureDef();
         fixDefBall.isSensor = true;
@@ -127,6 +134,7 @@ public class GameScreen implements Screen {
         defCenter.type = BodyDef.BodyType.DynamicBody;
         defCenter.position.set(240, 240); // center of the universe man
         center = world.createBody(defCenter);
+        center.setUserData(new BodyUD());
         
         FixtureDef fixDefCenter = new FixtureDef();
         fixDefCenter.isSensor = true;
@@ -144,6 +152,7 @@ public class GameScreen implements Screen {
         defPop.type = BodyDef.BodyType.DynamicBody;
         defPop.position.set(240, 240); // center of the universe man
         popCircle = world.createBody(defPop);
+        popCircle.setUserData(new BodyUD());
         
         FixtureDef fixDefPop = new FixtureDef();
         fixDefPop.isSensor = true;
@@ -151,11 +160,8 @@ public class GameScreen implements Screen {
         fixDefPop.restitution = 0.4f;
         CircleShape rondPop = new CircleShape();
         rondPop.setRadius(840f);//840f
-         
-        fixDefPop.shape = rondcenter;
+        fixDefPop.shape = rondPop;
         popCircle.createFixture(fixDefPop);
-        rondPop.dispose();
-        
         ressources = new Array<Ressource>();
         destroyers = new Array<Destroyer>();
     }
@@ -236,9 +242,9 @@ public class GameScreen implements Screen {
         
             for(int i =0; i < touches.size; i++){
     			TouchFeedBack touch = touches.get(i); 
+    			if(touch.drawRing == false)touches.removeIndex(i);
     			if(touch.hitPosition == 0)touch.hitPosition= gamePlayPosition;
     			touch.drawExpandingRing(batch, gamePlayPosition);
-    			if(touch.drawRing == false)touches.removeIndex(i);
     		}
             
             for(Ressource res : ressources){
@@ -263,7 +269,6 @@ public class GameScreen implements Screen {
             		res.destroy();
             		ressources.removeValue(res, false);
             	}
-            	
             }
             
             for(Destroyer des : destroyers){
@@ -296,7 +301,18 @@ public class GameScreen implements Screen {
         stage.act(Gdx.graphics.getDeltaTime());        
     	stage.draw();
     	//debugRenderer.render(world, camera.combined);
-    	
+    	Iterator<Body> i = toDestroy.iterator();
+    	if(!world.isLocked()){
+    	   while(i.hasNext()){
+    	      Body b = i.next();
+    	      if(b.getUserData() != null && ((BodyUD)b.getUserData()).on == true){
+    	    	  ((BodyUD)b.getUserData()).on = false;
+    	    	  world.destroyBody(b);
+    	      }
+    	      i.remove();
+    	   }
+    	   toDestroy.clear();
+    	}
     }
 
 	

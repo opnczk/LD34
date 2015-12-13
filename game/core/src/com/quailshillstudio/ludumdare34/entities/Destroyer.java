@@ -7,6 +7,7 @@ import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.quailshillstudio.ludumdare34.screens.GameScreen;
+import com.quailshillstudio.ludumdare34.utils.BodyUD;
 
 public class Destroyer {
 
@@ -27,6 +28,7 @@ public class Destroyer {
 	    defBall.type = BodyDef.BodyType.DynamicBody;
 	    defBall.position.set(x,y); // center of the universe man
 	    body = gmScr.world.createBody(defBall);
+	    body.setUserData(new BodyUD());
 		
 	    CircleShape sensorShape = new CircleShape();
 		sensorShape.setRadius(1f);
@@ -61,17 +63,14 @@ public class Destroyer {
 
 	public float destroy() {
 		gmScr.toDestroy.add(body);
-		this.gmScr.world.destroyBody(body);
 		return 5f;
 	}
 
 	public Vector2 getPosition() {
-		// TODO Auto-generated method stub
 		return body.getPosition();
 	}
 
 	public float getRadius() {
-		// TODO Auto-generated method stub
 		return 1f;
 	}
 

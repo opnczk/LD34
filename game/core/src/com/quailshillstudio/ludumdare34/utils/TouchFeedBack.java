@@ -44,6 +44,7 @@ public class TouchFeedBack {
         defCenter.type = BodyDef.BodyType.DynamicBody;
         defCenter.position.set(x, y); // center of the universe man
         ringBody = gmScr.world.createBody(defCenter);
+        ringBody.setUserData(new BodyUD());
         
         FixtureDef fixDefCenter = new FixtureDef();
         fixDefCenter.isSensor = true;
@@ -82,10 +83,10 @@ public class TouchFeedBack {
     		count --;
     		count --;
      	}
-     	System.out.println(alpha);
     	if(alpha < 0.05f){
      		drawRing = false;
-     		gmScr.world.destroyBody(ringBody);
+     		gmScr.toDestroy.add(ringBody);
+     		gmScr.touches.removeValue(this, false);
      	}
      }
 	
