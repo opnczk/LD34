@@ -61,14 +61,15 @@ public class TouchFeedBack {
      	float tickAlphaScale = (position - hitPosition);
 		float alpha = 1-(1*tickAlphaScale/duration);
 		size += 7.5f;
+		if(ringBody.getFixtureList().size > 0)
 		ringBody.getFixtureList().get(0).getShape().setRadius(size);
 		
 		Color tmpColor = batch.getColor();
      	batch.setColor(color.r, color.g, color.b, alpha);
      	ring1.setOrigin(ring1.getWidth()/ 2,ring1.getHeight()/ 2);
-        ring1.setPosition(ringBody.getPosition().x - (size*2/2),ringBody.getPosition().y - (size*2/2));
+        ring1.setPosition(ringBody.getPosition().x - (size*2/2 + size/8),ringBody.getPosition().y - (size*2/2 + size/8));
         ring1.setRotation((float) Math.toDegrees(ringBody.getAngle()));
-        ring1.setSize(size*2, size*2);
+        ring1.setSize(size*2 + size/4, size*2 + size /4);
         ring1.draw(batch);
      	batch.setColor(tmpColor);
      	

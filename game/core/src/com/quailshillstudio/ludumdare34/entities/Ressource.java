@@ -1,5 +1,6 @@
 package com.quailshillstudio.ludumdare34.entities;
 
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.CircleShape;
@@ -12,7 +13,7 @@ public class Ressource {
 	private ParticleEmitter particleEmitter;
 	private Fixture fixture;
 	private GameScreen gmScr;
-	private Body body;
+	public Body body;
 
 	public Ressource(GameScreen gmScr){
 		this.gmScr = gmScr;
@@ -40,7 +41,7 @@ public class Ressource {
 	       velx = velx / length;
 	       vely = vely / length;
 	    }
-	   float speed = 25f;
+	   float speed = gmScr.size*1.5f;
 	    	
 	   float finalVelx = velx * speed;
 	   float finalVely = vely * speed;
@@ -58,4 +59,18 @@ public class Ressource {
         particleEmitter.render(fixture.getBody().getWorldPoint((((CircleShape)fixture.getShape()).getPosition())));
 	}
 
+	public float destroy() {
+		gmScr.toDestroy.add(body);
+		gmScr.world.destroyBody(body);
+		return 1.5f;
+	}
+
+	public Vector2 getPosition() {
+		return this.body.getPosition();
+	}
+
+	public float getRadius() {
+		return 1f;
+	}
+	
 }

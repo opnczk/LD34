@@ -1,5 +1,6 @@
 package com.quailshillstudio.ludumdare34.entities;
 
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.CircleShape;
@@ -40,7 +41,7 @@ public class Destroyer {
 	       velx = velx / length;
 	       vely = vely / length;
 	    }
-	   float speed = 25f;
+	   float speed = gmScr.size*1.5f;
 	    	
 	   float finalVelx = velx * speed;
 	   float finalVely = vely * speed;
@@ -56,6 +57,22 @@ public class Destroyer {
 
 	public void render() {
         particleEmitter.render(fixture.getBody().getWorldPoint((((CircleShape)fixture.getShape()).getPosition())));
+	}
+
+	public float destroy() {
+		gmScr.toDestroy.add(body);
+		this.gmScr.world.destroyBody(body);
+		return 5f;
+	}
+
+	public Vector2 getPosition() {
+		// TODO Auto-generated method stub
+		return body.getPosition();
+	}
+
+	public float getRadius() {
+		// TODO Auto-generated method stub
+		return 1f;
 	}
 
 }

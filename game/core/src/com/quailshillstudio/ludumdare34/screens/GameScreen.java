@@ -26,6 +26,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.quailshillstudio.ludumdare34.LD34;
 import com.quailshillstudio.ludumdare34.entities.Destroyer;
 import com.quailshillstudio.ludumdare34.entities.Ressource;
+import com.quailshillstudio.ludumdare34.utils.CollisionGeometry;
 import com.quailshillstudio.ludumdare34.utils.TouchFeedBack;
 
 
@@ -44,12 +45,13 @@ public class GameScreen implements Screen {
 	//(Gdx.graphics.getHeight()*50) /480
 	private Texture bckText;
 	private OrthographicCamera orthoCam;
-	public float size = 150f;
+	public float size = 50f;
 	private Body ball;
 	private Body center;
 	private Sprite galaxSpr;
 	private Array<Ressource> ressources;
 	private Array<Destroyer> destroyers;
+	public Array<Body> toDestroy = new Array<Body>();
 	static Array<TouchFeedBack> touches = new Array<TouchFeedBack>();
 	
 	public Body popCircle;
@@ -60,6 +62,7 @@ public class GameScreen implements Screen {
 	private ImageButton defenseButton;
 	private ImageButton fusionButton;
 	private boolean fusionning;
+	private Vector2 nullVector = new Vector2(0,0);
 	
 
 	public GameScreen(LD34 topDown) { 
@@ -96,7 +99,7 @@ public class GameScreen implements Screen {
         world = new World(new Vector2(0, 0), true);
         bckText = new Texture(Gdx.files.internal("bck.png"));
         bckText.setFilter(TextureFilter.Linear, TextureFilter.Linear);
-        galaxText = new TextureRegion(new Texture(Gdx.files.internal("galaxy2.png")));
+        galaxText = new TextureRegion(new Texture(Gdx.files.internal("galaxy.png")));
         galaxText.getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
         galaxSpr = new Sprite(galaxText);
         debugRenderer = new Box2DDebugRenderer();
@@ -164,6 +167,8 @@ public class GameScreen implements Screen {
  
     @Override
     public void render(float delta) {
+    	
+		world.step(Gdx.app.getGraphics().getDeltaTime(), 3, 3);
     	currentTime += delta;
         float position = currentTime - initialTime ;
         float gamePlayPosition = position / 130;
@@ -180,7 +185,21 @@ public class GameScreen implements Screen {
     		//((CircleShape)emitter1.getShape()).setPosition(new Vector2(0,size/4));
     	}
     	if(fusionButton.isPressed() && fusionning == false){
-    		System.out.println("FUSIOOOOON !");
+    		//ressources.removeValue(res, false);
+    		float deltaSize = ball.getFixtureList().get(0).getShape().getRadius() - size;
+    		ball.getFixtureList().get(0).getShape().setRadius(size);
+    		center.getFixtureList().get(0).getShape().setRadius(size/4);
+    		for(Ressource res1 : ressources){
+            	if(CollisionGeometry.CircleCircle(res1.getPosition(), res1.getRadius(), ball.getPosition(), size)){
+            		float radius = CollisionGeometry.distanceBetween2Points(res1.getPosition().x, res1.getPosition().y, ball.getPosition().x, ball.getPosition().y);
+            		radius += deltaSize;
+            		float angle = (float) Math.atan2(res1.getPosition().y - 240, res1.getPosition().x - 240);
+            		float x = (float) (240 + (radius * Math.cos(angle)));
+            		float y = (float) (240 + (radius * Math.sin(angle)));
+            		res1.body.setLinearVelocity(nullVector);
+            		res1.body.setTransform(x, y, res1.body.getAngle());
+            	}
+            	}
     	}
 
     	for(TouchFeedBack touch : touches){
@@ -225,11 +244,38 @@ public class GameScreen implements Screen {
             for(Ressource res : ressources){
             	res.update(delta);
             	res.render();
+            	if(CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), size)){
+            		float radius = CollisionGeometry.distanceBetween2Points(res.getPosition().x, res.getPosition().y, ball.getPosition().x, ball.getPosition().y);
+            		radius -= size/1000;
+            		float angle = (float) Math.atan2(res.getPosition().y - 240, res.getPosition().x - 240);
+            		angle -= Math.toRadians(.5f);
+            		float x = (float) (240 + (radius * Math.cos(angle)));
+            		float y = (float) (240 + (radius * Math.sin(angle)));
+            		res.body.setLinearVelocity(nullVector );
+            		res.body.setTransform(x, y, res.body.getAngle());
+            	}
+            	
+            	if(!fusionning && fusionButton.isPressed() && CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), center.getPosition(), size/4)){
+            		size += res.destroy();
+            		ressources.removeValue(res, false);
+            	}
+            	if(touches.size > 0 && CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), touches.get(0).getDestroyingRadius()) && ! CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), size)){
+            		res.destroy();
+            		ressources.removeValue(res, false);
+            	}
+            	
             }
             
             for(Destroyer des : destroyers){
             	des.update(delta);
             	des.render();
+            	if(CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size/4)){
+            		size -= des.destroy();
+            	}
+            	if(touches.size > 0 && CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), touches.get(0).getDestroyingRadius()) && !CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size)){
+            		des.destroy();
+            		destroyers.removeValue(des, false);
+            	}
             }
         batch.end();
         
@@ -249,8 +295,8 @@ public class GameScreen implements Screen {
         
         stage.act(Gdx.graphics.getDeltaTime());        
     	stage.draw();
-       // debugRenderer.render(world, camera.combined);
-		world.step(Gdx.app.getGraphics().getDeltaTime(), 3, 3);
+    	//debugRenderer.render(world, camera.combined);
+    	
     }
 
 	
