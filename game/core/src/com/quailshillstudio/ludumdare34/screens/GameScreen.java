@@ -42,14 +42,12 @@ public class GameScreen implements Screen {
 	private float count;
 	private boolean clockwise = true;
 	private TextureRegion galaxText;
-	private int width, basicWidth;
-	private int height, basicHeight;
-	//(Gdx.graphics.getHeight()*50) /480
+	private int width, basicWidth, height, basicHeight;
+
 	private Texture bckText;
 	private OrthographicCamera orthoCam;
 	public float size = 50f;
-	private Body ball;
-	private Body center;
+	private Body ball, center;
 	private Sprite galaxSpr;
 	private Array<Ressource> ressources;
 	private Array<Destroyer> destroyers;
@@ -57,12 +55,9 @@ public class GameScreen implements Screen {
 	public Array<TouchFeedBack> touches;
 	
 	public Body popCircle;
-	private float timer;
-	public float currentTime;
-	private float initialTime;
+	private float timer, currentTime, initialTime, lastSize;
 	private Stage stage;
-	private ImageButton defenseButton;
-	private ImageButton fusionButton;
+	private ImageButton defenseButton, fusionButton;
 	private boolean fusionning;
 	private Vector2 nullVector;
 	
@@ -79,13 +74,12 @@ public class GameScreen implements Screen {
     	camera.far = 1000;
     	camera.rotate(45, 1, 0, 0);
     	stage = new Stage();
-    	//stage.setViewport(new FitViewport(width, height));
     	
     	touches = new Array<TouchFeedBack>();
-    	 toDestroy = new Array<Body>();
-    	 nullVector = new Vector2(0,0);
+    	toDestroy = new Array<Body>();
+    	nullVector = new Vector2(0,0);
 
-    	Texture defenseButtonImg = new Texture(Gdx.files.internal("data/particles/circle.png"));
+    	Texture defenseButtonImg = new Texture(Gdx.files.internal("data/particles/defense.png"));
  	   	defenseButtonImg.setFilter(TextureFilter.Linear, TextureFilter.Linear);
  	   	defenseButton = new ImageButton(new Image(defenseButtonImg).getDrawable());
  	   	defenseButton.setPosition(Gdx.graphics.getWidth() - (Gdx.graphics.getWidth()/10), 0); //** Button location **//
@@ -93,7 +87,7 @@ public class GameScreen implements Screen {
         defenseButton.setWidth(Gdx.graphics.getWidth() /10); //** Button Width **//
         stage.addActor(defenseButton);
 
-    	Texture fusionButtonImg = new Texture(Gdx.files.internal("data/particles/circle.png"));
+    	Texture fusionButtonImg = new Texture(Gdx.files.internal("data/particles/fusion.png"));
  	   	fusionButtonImg.setFilter(TextureFilter.Linear, TextureFilter.Linear);
  	   	fusionButton = new ImageButton(new Image(fusionButtonImg).getDrawable());
  	   	fusionButton.setPosition(0, 0); //** Button location **//
@@ -168,12 +162,13 @@ public class GameScreen implements Screen {
    
 	@Override
     public void dispose() {
-		
+		world.dispose();
+		stage.dispose();
+		bckText.dispose();
     }
  
     @Override
     public void render(float delta) {
-    	
 		world.step(Gdx.app.getGraphics().getDeltaTime(), 3, 3);
     	currentTime += delta;
         float position = currentTime - initialTime;
@@ -183,12 +178,13 @@ public class GameScreen implements Screen {
     	Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
     	camera.update();
         
+    	if(size != lastSize){
+    		ball.getFixtureList().get(0).getShape().setRadius(size);
+    		center.getFixtureList().get(0).getShape().setRadius(size/4);
+    	}
+    	lastSize = size;
     	if(defenseButton.isPressed() && touches.size == 0){
     		touches.add(new TouchFeedBack(240, 240, this));
-    		//size += 1.5f;
-    		//ball.getFixtureList().get(0).getShape().setRadius(size);
-    		//center.getFixtureList().get(0).getShape().setRadius(size/4);
-    		//((CircleShape)emitter1.getShape()).setPosition(new Vector2(0,size/4));
     	}
     	if(fusionButton.isPressed() && fusionning == false){
     		//ressources.removeValue(res, false);
@@ -205,7 +201,7 @@ public class GameScreen implements Screen {
             		res1.body.setLinearVelocity(nullVector);
             		res1.body.setTransform(x, y, res1.body.getAngle());
             	}
-            	}
+            }
     	}
 
     	for(TouchFeedBack touch : touches){
@@ -274,11 +270,24 @@ public class GameScreen implements Screen {
             for(Destroyer des : destroyers){
             	des.update(delta);
             	des.render();
-            	if(CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size/4)){
-            		size -= des.destroy();
-            	}
             	if(touches.size > 0 && CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), touches.get(0).getDestroyingRadius()) && !CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size)){
             		des.destroy();
+            		destroyers.removeValue(des, false);
+            	}
+            	if(CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size/4)){
+            		size -= des.destroy();
+            		float deltaSize = ball.getFixtureList().get(0).getShape().getRadius() - size;
+            		for(Ressource res1 : ressources){
+                    	if(CollisionGeometry.CircleCircle(res1.getPosition(), res1.getRadius(), ball.getPosition(), ball.getFixtureList().get(0).getShape().getRadius())){
+                    		float radius = CollisionGeometry.distanceBetween2Points(res1.getPosition().x, res1.getPosition().y, ball.getPosition().x, ball.getPosition().y);
+                    		radius -= deltaSize;
+                    		float angle = (float) Math.atan2(res1.getPosition().y - 240, res1.getPosition().x - 240);
+                    		float x = (float) (240 + (radius * Math.cos(angle)));
+                    		float y = (float) (240 + (radius * Math.sin(angle)));
+                    		res1.body.setLinearVelocity(nullVector);
+                    		res1.body.setTransform(x, y, res1.body.getAngle());
+                    	}
+                    }
             		destroyers.removeValue(des, false);
             	}
             }
@@ -286,13 +295,10 @@ public class GameScreen implements Screen {
         
         float speed = .5f;
         if(clockwise){
-            //count --;
-        	
         	 ball.setTransform(240, 240,(float) (ball.getAngle() - Math.toRadians(speed)));
         	 center.setTransform(240, 240,(float) (center.getAngle() - Math.toRadians(speed)));
             count = count - speed;
         }else{
-            //count ++;
         	ball.setTransform(240, 240,(float) (ball.getAngle() + Math.toRadians(speed)));
         	 center.setTransform(240, 240,(float) (center.getAngle() + Math.toRadians(speed)));
             count = count + speed;
@@ -300,7 +306,8 @@ public class GameScreen implements Screen {
         
         stage.act(Gdx.graphics.getDeltaTime());        
     	stage.draw();
-    	//debugRenderer.render(world, camera.combined);
+    	debugRenderer.render(world, camera.combined);
+    	
     	Iterator<Body> i = toDestroy.iterator();
     	if(!world.isLocked()){
     	   while(i.hasNext()){
