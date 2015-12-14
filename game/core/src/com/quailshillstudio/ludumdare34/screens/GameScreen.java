@@ -1,6 +1,7 @@
 package com.quailshillstudio.ludumdare34.screens;
 
 import java.util.Iterator;
+import java.util.Random;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
@@ -61,7 +62,6 @@ public class GameScreen implements Screen {
 	private boolean fusionning;
 	private Vector2 nullVector;
 	
-
 	public GameScreen(LD34 topDown) { 
     	width = Gdx.graphics.getWidth();
     	height = Gdx.graphics.getHeight();
@@ -184,10 +184,14 @@ public class GameScreen implements Screen {
     	}
     	lastSize = size;
     	if(defenseButton.isPressed() && touches.size == 0){
+    		for(Ressource res : ressources)
+    			res.spared = false;
+    		for(Destroyer des : destroyers)
+    			des.spared = false;
+    		
     		touches.add(new TouchFeedBack(240, 240, this));
     	}
     	if(fusionButton.isPressed() && fusionning == false){
-    		//ressources.removeValue(res, false);
     		float deltaSize = ball.getFixtureList().get(0).getShape().getRadius() - size;
     		ball.getFixtureList().get(0).getShape().setRadius(size);
     		center.getFixtureList().get(0).getShape().setRadius(size/4);
@@ -262,8 +266,12 @@ public class GameScreen implements Screen {
             		ressources.removeValue(res, false);
             	}
             	if(touches.size > 0 && CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), touches.get(0).getDestroyingRadius()) && ! CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), size)){
-            		res.destroy();
-            		ressources.removeValue(res, false);
+            		if(Math.random() <= 0.5 && !res.spared){
+            			res.destroy();
+            			ressources.removeValue(res, false);
+            		}else{
+            			res.spared = true;
+            		}
             	}
             }
             
@@ -271,8 +279,12 @@ public class GameScreen implements Screen {
             	des.update(delta);
             	des.render();
             	if(touches.size > 0 && CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), touches.get(0).getDestroyingRadius()) && !CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size)){
-            		des.destroy();
-            		destroyers.removeValue(des, false);
+            		if(Math.random() <= 0.75 && !des.spared){
+            			des.destroy();
+            			destroyers.removeValue(des, false);
+            		}else{
+            			des.spared = true;
+            		}
             	}
             	if(CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size/4)){
             		size -= des.destroy();

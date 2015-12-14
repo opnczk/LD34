@@ -15,6 +15,7 @@ public class Destroyer {
 	private Fixture fixture;
 	private GameScreen gmScr;
 	private Body body;
+	public boolean spared;
 
 	public Destroyer(GameScreen gmScr){
 		this.gmScr = gmScr;
@@ -43,14 +44,14 @@ public class Destroyer {
 	       velx = velx / length;
 	       vely = vely / length;
 	    }
-	   float speed = gmScr.size*1.5f;
+	   float speed = gmScr.size*2.5f;
 	    	
 	   float finalVelx = velx * speed;
 	   float finalVely = vely * speed;
 
 	   body.setLinearVelocity(finalVelx,finalVely);
 		
-	   particleEmitter = new ParticleEmitter(gmScr);
+	   particleEmitter = new ParticleEmitter(gmScr,"burningb");
 	}
 	
 	public void update(float delta) {

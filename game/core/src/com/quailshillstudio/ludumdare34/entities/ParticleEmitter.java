@@ -9,10 +9,10 @@ public class ParticleEmitter{
 	private ParticleEffect pe;
 	private GameScreen gameScreen;
 	
-	public ParticleEmitter(GameScreen gmScr){
+	public ParticleEmitter(GameScreen gmScr, String name){
 		gameScreen = gmScr;
 		pe = new ParticleEffect();
-        pe.load(Gdx.files.internal("burningb"),Gdx.files.internal(""));
+        pe.load(Gdx.files.internal(name),Gdx.files.internal(""));
         pe.scaleEffect(2f);
         pe.start();
 	}
