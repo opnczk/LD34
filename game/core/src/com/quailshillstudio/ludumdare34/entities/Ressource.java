@@ -1,5 +1,7 @@
 package com.quailshillstudio.ludumdare34.entities;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
@@ -16,9 +18,23 @@ public class Ressource {
 	private GameScreen gmScr;
 	public Body body;
 	public boolean spared;
+	public String color = "green";
 
 	public Ressource(GameScreen gmScr){
 		this.gmScr = gmScr;
+		double random = Math.random();
+		if(random < 0.2){
+			color = "green";
+		}else if(random >= 0.2 && random < 0.4){
+			color = "red";
+		}else if(random >= 0.4 && random < 0.6){
+			color = "blue";
+		}else if(random >= 0.6 && random < 0.8){
+			color = "violet";
+		}else {
+			color = "yellow";
+		}
+		
 		float angle = (float) (Math.random()*Math.PI*2);
 		float x1 = 240;
 		float y1 = 240;
@@ -51,7 +67,7 @@ public class Ressource {
 
 	   body.setLinearVelocity(finalVelx,finalVely);
 		
-	   particleEmitter = new ParticleEmitter(gmScr,"green-burst");
+	   particleEmitter = new ParticleEmitter(gmScr,color+"-burst");
 	}
 	
 	public void update(float delta) {
@@ -64,7 +80,17 @@ public class Ressource {
 
 	public float destroy() {
 		gmScr.toDestroy.add(body);
-		return 1.5f;
+		if(color.contains("green")){
+			return 2f;
+		}else if(color.contains("red")){
+			return 3f;
+		}else if(color.contains("blue")){
+			return 3.75f;
+		}else if(color.contains("violet")){
+			return 4.5f;
+		}else {
+			return 4.75f;
+		}
 	}
 
 	public Vector2 getPosition() {

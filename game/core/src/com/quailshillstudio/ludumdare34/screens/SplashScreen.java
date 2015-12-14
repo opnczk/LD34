@@ -95,12 +95,12 @@ public class SplashScreen implements Screen{
        batch.begin();
        
 	       if(!app.manager.update()){
-	    	   layout.setText(font, "Loading data : "+app.manager.getProgress()*100+"%");
-	    	   font.draw(batch, "Loading data : "+app.manager.getProgress()*100+"%", Gdx.graphics.getWidth()/2 - layout.width/2, Gdx.graphics.getHeight()/7);
+	    	   layout.setText(font, "www.quailshillstudio.com");
+	    	   font.draw(batch, "www.quailshillstudio.com", Gdx.graphics.getWidth()/2 - layout.width/2, Gdx.graphics.getHeight()/7);
 	    	   }
 	       else{ 
-	    	   layout.setText(font, "Done Loading");
-	    	   font.draw(batch, "Done Loading", Gdx.graphics.getWidth()/2 - layout.width/2, Gdx.graphics.getHeight()/7);
+	    	   layout.setText(font, "www.quailshillstudio.com");
+	    	   font.draw(batch, "www.quailshillstudio.com", Gdx.graphics.getWidth()/2 - layout.width/2, Gdx.graphics.getHeight()/7);
 	    	   }
        
        batch.end();

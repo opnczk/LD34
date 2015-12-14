@@ -1,7 +1,6 @@
 package com.quailshillstudio.ludumdare34.screens;
 
 import java.util.Iterator;
-import java.util.Random;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
@@ -10,6 +9,8 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
+import com.badlogic.gdx.graphics.g2d.ParticleEffect;
+import com.badlogic.gdx.graphics.g2d.ParticleEmitter;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -47,13 +48,14 @@ public class GameScreen implements Screen {
 
 	private Texture bckText;
 	private OrthographicCamera orthoCam;
-	public float size = 50f;
+	public float size = 85f;
 	private Body ball, center;
 	private Sprite galaxSpr;
 	private Array<Ressource> ressources;
 	private Array<Destroyer> destroyers;
 	public Array<Body> toDestroy;
 	public Array<TouchFeedBack> touches;
+	public Array<ParticleEffect> particles;
 	
 	public Body popCircle;
 	private float timer, currentTime, initialTime, lastSize;
@@ -76,6 +78,7 @@ public class GameScreen implements Screen {
     	stage = new Stage();
     	
     	touches = new Array<TouchFeedBack>();
+    	particles = new Array<ParticleEffect>();
     	toDestroy = new Array<Body>();
     	nullVector = new Vector2(0,0);
 
@@ -246,8 +249,9 @@ public class GameScreen implements Screen {
     			if(touch.hitPosition == 0)touch.hitPosition= gamePlayPosition;
     			touch.drawExpandingRing(batch, gamePlayPosition);
     		}
-            
+            int nbFus = 0;
             for(Ressource res : ressources){
+            	if(nbFus == 0) nbFus ++;
             	res.update(delta);
             	res.render();
             	if(CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), size)){
@@ -262,7 +266,13 @@ public class GameScreen implements Screen {
             	}
             	
             	if(!fusionning && fusionButton.isPressed() && CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), center.getPosition(), size/4)){
+            		nbFus++;
             		size += res.destroy();
+            		ParticleEffect pae = new ParticleEffect();
+                    pae.load(Gdx.files.internal(res.color+"-fusion"),Gdx.files.internal(""));
+                    pae.scaleEffect(.5f);
+                    pae.start();
+            		particles.add(pae);
             		ressources.removeValue(res, false);
             	}
             	if(touches.size > 0 && CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), touches.get(0).getDestroyingRadius()) && ! CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), size)){
@@ -273,6 +283,9 @@ public class GameScreen implements Screen {
             			res.spared = true;
             		}
             	}
+            }
+            if(nbFus == 1  && fusionButton.isPressed() && !fusionning){
+            	size -= .2f;
             }
             
             for(Destroyer des : destroyers){
@@ -303,6 +316,17 @@ public class GameScreen implements Screen {
             		destroyers.removeValue(des, false);
             	}
             }
+            
+            for(ParticleEffect pae : particles){
+            	for(ParticleEmitter em : pae.getEmitters())
+            		em.setPosition(240,240);
+        	    pae.update(Gdx.graphics.getDeltaTime());
+        	      pae.draw(batch);
+        	      if (pae.isComplete()){
+        	    	  particles.removeValue(pae, false);
+        	    	  pae.dispose();
+        	      }
+            }
         batch.end();
         
         float speed = .5f;
@@ -318,7 +342,9 @@ public class GameScreen implements Screen {
         
         stage.act(Gdx.graphics.getDeltaTime());        
     	stage.draw();
-    	debugRenderer.render(world, camera.combined);
+    	//debugRenderer.render(world, camera.combined);
+    	
+    	
     	
     	Iterator<Body> i = toDestroy.iterator();
     	if(!world.isLocked()){
