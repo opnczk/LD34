@@ -104,7 +104,7 @@ public class SplashScreen implements Screen{
 	    	   }
        
        batch.end();
-       if (TimeUtils.millis()>(startTime+screenDuration) && possible){ app.setScreen(new MainMenuScreen(app)); dispose();}
+       if (TimeUtils.millis()>(startTime+screenDuration) && possible){ app.setScreen(new GameScreen(app)); dispose();}
     }
 
 	@Override

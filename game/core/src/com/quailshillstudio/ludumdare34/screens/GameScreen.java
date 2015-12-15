@@ -4,16 +4,22 @@ import java.util.Iterator;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.graphics.g2d.ParticleEmitter;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -63,6 +69,16 @@ public class GameScreen implements Screen {
 	private ImageButton defenseButton, fusionButton;
 	private boolean fusionning;
 	private Vector2 nullVector;
+	private Music music;
+	Sound fusionSfx, explosionSfx, warpoutSfx;
+	private boolean paused;
+	private boolean startScreenDisplay;
+	private boolean endScreenDisplay;
+	private Texture screenTexture;
+	private BitmapFont font;
+	private Texture gameLogo;
+	private int remainingTime;
+	private int score;
 	
 	public GameScreen(LD34 topDown) { 
     	width = Gdx.graphics.getWidth();
@@ -108,6 +124,13 @@ public class GameScreen implements Screen {
         debugRenderer = new Box2DDebugRenderer();
         shapeRenderer = new ShapeRenderer();
 
+        music = Gdx.audio.newMusic(Gdx.files.internal("music/spacearray.ogg"));
+        music.setLooping(true);
+        
+        this.fusionSfx = Gdx.audio.newSound(Gdx.files.internal("sfx/boxopen.ogg"));
+        this.explosionSfx = Gdx.audio.newSound(Gdx.files.internal("sfx/warpout.ogg"));
+        this.warpoutSfx = Gdx.audio.newSound(Gdx.files.internal("sfx/explode.ogg"));
+        
         /*Galaxy bounds*/
         BodyDef defBall = new BodyDef();
         defBall.type = BodyDef.BodyType.DynamicBody;
@@ -161,6 +184,25 @@ public class GameScreen implements Screen {
         popCircle.createFixture(fixDefPop);
         ressources = new Array<Ressource>();
         destroyers = new Array<Destroyer>();
+        
+    	screenTexture = new Texture(Gdx.files.internal("deadScreen.png"));
+    	FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("data/fonts/kenvector_future.ttf"));
+    	FreeTypeFontParameter params = new FreeTypeFontParameter();
+	     params.borderColor = Color.BLACK;
+	     params.color = Color.WHITE;
+	     params.borderStraight = false;
+	     params.borderWidth = 2.5f;
+	     params.size = (Gdx.graphics.getWidth()*32) /640;
+	     BitmapFont buttonFont = generator.generateFont(params); // font size 12 pixels
+	     params.size = (Gdx.graphics.getWidth()*16) /640;
+	     font = generator.generateFont(params);
+	     generator.dispose(); // don't forget to dispose to avoid memory leaks!
+	     
+	     gameLogo = new Texture(Gdx.files.internal("gameLogo.png"));
+	     gameLogo.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+        paused = true;
+        startScreenDisplay = true;
+        endScreenDisplay = false;
     }
    
 	@Override
@@ -172,9 +214,34 @@ public class GameScreen implements Screen {
  
     @Override
     public void render(float delta) {
-		world.step(Gdx.app.getGraphics().getDeltaTime(), 3, 3);
+    	if(paused && startScreenDisplay && Gdx.input.justTouched()){
+    		paused = false;
+    		startScreenDisplay = false;
+    		initialTime = 0;
+    		remainingTime = 6000;
+    	}
+    	if(paused && endScreenDisplay && Gdx.input.justTouched()){
+    		paused = false;
+    		endScreenDisplay = false;
+    		initialTime = 0;
+    		remainingTime = 6000;
+    		size = 85f;
+    		score = 0;
+    		this.destroyers.clear();
+    		this.ressources.clear();
+    	}
+    	if(remainingTime <= 0 && !paused && !endScreenDisplay && !startScreenDisplay){
+    		float bonus = size - 85;
+    		score += bonus *10;
+    		this.paused = true;
+    		this.endScreenDisplay = true;
+    	}
+    	if(!paused)
+    		world.step(Gdx.app.getGraphics().getDeltaTime(), 3, 3);
+    	
     	currentTime += delta;
-        float position = currentTime - initialTime;
+        remainingTime -= delta;
+    	float position = currentTime - initialTime;
         float gamePlayPosition = position / 130;
         
     	Gdx.gl.glClearColor(1, 0, 0, 1);
@@ -194,7 +261,13 @@ public class GameScreen implements Screen {
     		
     		touches.add(new TouchFeedBack(240, 240, this));
     	}
-    	if(fusionButton.isPressed() && fusionning == false){
+    	if(!paused && fusionButton.isPressed() && fusionning == false){
+    		this.fusionSfx.play();
+    		ParticleEffect pae = new ParticleEffect();
+            pae.load(Gdx.files.internal("fusion"),Gdx.files.internal(""));
+            pae.scaleEffect(.5f);
+            pae.start();
+    		particles.add(pae);
     		float deltaSize = ball.getFixtureList().get(0).getShape().getRadius() - size;
     		ball.getFixtureList().get(0).getShape().setRadius(size);
     		center.getFixtureList().get(0).getShape().setRadius(size/4);
@@ -222,7 +295,7 @@ public class GameScreen implements Screen {
         
 		if(timer > 0){
         	timer -= delta;
-        }else if(timer <= 0){
+        }else if(!paused && timer <= 0){
         	timer = (float) (Math.floor(Math.random() * 1.75f) + 0.5f);
         	double pileFace = Math.random();
         	if(pileFace <= 0.5){
@@ -265,18 +338,20 @@ public class GameScreen implements Screen {
             		res.body.setTransform(x, y, res.body.getAngle());
             	}
             	
-            	if(!fusionning && fusionButton.isPressed() && CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), center.getPosition(), size/4)){
+            	if(!paused && !fusionning && fusionButton.isPressed() && CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), center.getPosition(), size/4)){
             		nbFus++;
             		size += res.destroy();
+            		score += 10;
             		ParticleEffect pae = new ParticleEffect();
                     pae.load(Gdx.files.internal(res.color+"-fusion"),Gdx.files.internal(""));
-                    pae.scaleEffect(.5f);
+                    pae.scaleEffect(1.25f);
                     pae.start();
             		particles.add(pae);
             		ressources.removeValue(res, false);
             	}
             	if(touches.size > 0 && CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), touches.get(0).getDestroyingRadius()) && ! CollisionGeometry.CircleCircle(res.getPosition(), res.getRadius(), ball.getPosition(), size)){
             		if(Math.random() <= 0.5 && !res.spared){
+            			this.warpoutSfx.play();
             			res.destroy();
             			ressources.removeValue(res, false);
             		}else{
@@ -284,7 +359,7 @@ public class GameScreen implements Screen {
             		}
             	}
             }
-            if(nbFus == 1  && fusionButton.isPressed() && !fusionning){
+            if(!paused && nbFus == 1  && fusionButton.isPressed() && !fusionning){
             	size -= .2f;
             }
             
@@ -293,14 +368,23 @@ public class GameScreen implements Screen {
             	des.render();
             	if(touches.size > 0 && CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), touches.get(0).getDestroyingRadius()) && !CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size)){
             		if(Math.random() <= 0.75 && !des.spared){
+            			this.warpoutSfx.play();
             			des.destroy();
+            			score += 3;
             			destroyers.removeValue(des, false);
             		}else{
             			des.spared = true;
             		}
             	}
             	if(CollisionGeometry.CircleCircle(des.getPosition(), des.getRadius(), ball.getPosition(), size/4)){
+            		this.explosionSfx.play();
             		size -= des.destroy();
+            		score -= 5;
+            		ParticleEffect pae = new ParticleEffect();
+                    pae.load(Gdx.files.internal("explode"),Gdx.files.internal(""));
+                    pae.scaleEffect(.5f);
+                    pae.start();
+            		particles.add(pae);
             		float deltaSize = ball.getFixtureList().get(0).getShape().getRadius() - size;
             		for(Ressource res1 : ressources){
                     	if(CollisionGeometry.CircleCircle(res1.getPosition(), res1.getRadius(), ball.getPosition(), ball.getFixtureList().get(0).getShape().getRadius())){
@@ -329,6 +413,42 @@ public class GameScreen implements Screen {
             }
         batch.end();
         
+        /*Here Render Uis*/
+        if(startScreenDisplay){
+        	
+			stage.getBatch().begin();
+			stage.getBatch().draw(screenTexture, 0, 0, Gdx.graphics.getWidth(),  Gdx.graphics.getWidth());
+			stage.getBatch().draw(gameLogo, Gdx.graphics.getWidth()/4, Gdx.graphics.getHeight() - (float)( ((Gdx.graphics.getWidth()/2)/3.4) *1.5f), Gdx.graphics.getWidth()/2, (float) ((Gdx.graphics.getWidth()/2)/3.4));
+			font.draw(stage.getBatch(), "Touch anywhere to start", Gdx.graphics.getWidth()/2 - (Gdx.graphics.getWidth()/10*4.5f)/2, Gdx.graphics.getHeight()/2 - (Gdx.graphics.getHeight()/10*6f)/2);
+			//button1.draw(stage.getBatch(),1);
+			stage.getBatch().end();
+			if(Gdx.input.justTouched()){
+				/*
+					Vector3 tmp = new Vector3(Gdx.input.getX(),Gdx.input.getY(), 0);
+					  app.camera.unproject(tmp);
+					  Rectangle textureBounds=new Rectangle(Gdx.graphics.getWidth()/2-  button1.getWidth()/2, Gdx.graphics.getHeight()/2 -  button1.getHeight()*1.5f, button1.getWidth(), button1.getHeight());
+					  // texture x is the x position of the texture
+					  // texture y is the y position of the texture
+					  // texturewidth is the width of the texture (you can get it with texture.getWidth() or textureRegion.getRegionWidth() if you have a texture region
+					   // textureheight is the height of the texture (you can get it with texture.getHeight() or textureRegion.getRegionhHeight() if you have a texture region
+					  if(textureBounds.contains(tmp.x,tmp.y))
+					     {
+						  restartGame();
+					     }*/
+			}
+        }else if(this.endScreenDisplay){
+        	stage.getBatch().begin();
+			stage.getBatch().draw(screenTexture, 0, 0, Gdx.graphics.getWidth(),  Gdx.graphics.getWidth());
+			font.draw(stage.getBatch(),"Score :"+score, Gdx.graphics.getWidth()/2 - (Gdx.graphics.getWidth()/10*4.5f)/2, Gdx.graphics.getHeight() - (Gdx.graphics.getHeight()/10)/4);
+			font.draw(stage.getBatch(), "Touch anywhere to restart", Gdx.graphics.getWidth()/2 - (Gdx.graphics.getWidth()/10*4.5f)/2, Gdx.graphics.getHeight()/2 - (Gdx.graphics.getHeight()/10*6f)/2);
+			//button1.draw(stage.getBatch(),1);
+			stage.getBatch().end();
+        }else{
+        	stage.getBatch().begin();
+        	font.draw(stage.getBatch(),"Score :"+score+ "     Time remaining :"+Math.round(remainingTime/100), Gdx.graphics.getWidth()/2 - (Gdx.graphics.getWidth()/10*4.5f)/2, Gdx.graphics.getHeight() - (Gdx.graphics.getHeight()/10)/4);
+        	stage.getBatch().end();
+        }
+
         float speed = .5f;
         if(clockwise){
         	 ball.setTransform(240, 240,(float) (ball.getAngle() - Math.toRadians(speed)));
@@ -379,6 +499,7 @@ public class GameScreen implements Screen {
 	@Override
 	public void show() {
 		Gdx.input.setInputProcessor(stage);
+		music.play();
 	}
 
 	@Override

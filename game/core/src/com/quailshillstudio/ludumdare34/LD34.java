@@ -7,7 +7,6 @@ import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.quailshillstudio.ludumdare34.screens.GameScreen;
-import com.quailshillstudio.ludumdare34.screens.MainMenuScreen;
 import com.quailshillstudio.ludumdare34.screens.SplashScreen;
 
 
@@ -15,7 +14,6 @@ public class LD34 extends Game {
 	public OrthographicCamera camera;
 	SpriteBatch batch;
 	public SplashScreen splashScreen;
-	public MainMenuScreen mainMenuScreen;
 	public GameScreen gameScreen;
 	public String deviceId;
 	public boolean musicOn = true;
@@ -47,7 +45,6 @@ public class LD34 extends Game {
 		batch = new SpriteBatch();
 
 		splashScreen = new SplashScreen(this);
-		mainMenuScreen = new MainMenuScreen(this);
      setScreen(splashScreen);
 	}
  
